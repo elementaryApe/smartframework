@@ -13,9 +13,9 @@ import java.lang.reflect.Method;
  * @author hsh
  * @create 2018-05-07 12:00
  **/
-public class TransationProxy implements Proxy {
+public class TransactionProxy implements Proxy {
 
-    private static final Logger logger = LoggerFactory.getLogger(TransationProxy.class);
+    private static final Logger logger = LoggerFactory.getLogger(TransactionProxy.class);
 
     //同一线程中事物控制逻辑只执行一次
     private static final ThreadLocal<Boolean> FLAG_HOLDER = new ThreadLocal<Boolean>() {

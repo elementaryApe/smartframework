@@ -24,4 +24,6 @@ public interface ConfigConstant {
 
     String APP_ASSERT_PATH = "smart.constans.app.asset_path";
 
+    String APP_UPLOAD_LIMIT="smart.constans.app.upload_limit";
+
 }

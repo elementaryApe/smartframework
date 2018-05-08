@@ -5,7 +5,7 @@ import com.herman.smart4j.annotation.Service;
 import com.herman.smart4j.proxy.AspectProxy;
 import com.herman.smart4j.proxy.Proxy;
 import com.herman.smart4j.proxy.ProxyManger;
-import com.herman.smart4j.proxy.TransationProxy;
+import com.herman.smart4j.proxy.TransactionProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +86,7 @@ public final class AopHelper {
      */
     private static void addTransactionProxy(Map<Class<?>, Set<Class<?>>> proxyMap) throws Exception {
         Set<Class<?>> serviceClassSet = ClassHelper.getClassSetByAnnotation(Service.class);
-        proxyMap.put(TransationProxy.class, serviceClassSet);
+        proxyMap.put(TransactionProxy.class, serviceClassSet);
     }
 
     /**

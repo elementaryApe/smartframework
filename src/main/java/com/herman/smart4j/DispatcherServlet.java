@@ -4,9 +4,7 @@ import com.herman.smart4j.bean.Data;
 import com.herman.smart4j.bean.Handler;
 import com.herman.smart4j.bean.Param;
 import com.herman.smart4j.bean.View;
-import com.herman.smart4j.helper.BeanHelper;
-import com.herman.smart4j.helper.ConfigHelper;
-import com.herman.smart4j.helper.ControllerHelper;
+import com.herman.smart4j.helper.*;
 import com.herman.smart4j.utils.CodecUtil;
 import com.herman.smart4j.utils.JsonUtil;
 import com.herman.smart4j.utils.ReflectionUtil;
@@ -49,6 +47,7 @@ public class DispatcherServlet extends HttpServlet {
         //处理静态资源默认Servlet
         ServletRegistration defaultServlet = servletContext.getServletRegistration("default");
         defaultServlet.addMapping(ConfigHelper.getAppAssertPath());
+        UploadHelper.init(servletContext);
     }
 
     @Override
@@ -56,6 +55,9 @@ public class DispatcherServlet extends HttpServlet {
         //获取请求方法与请求路径
         String requestMethod = req.getMethod().toLowerCase();
         String requestPath = req.getPathInfo();
+        if(StringUtils.equals(requestPath,"/favicon.ico")){
+            return;
+        }
         // 获取Action 处理器
         Handler handler = ControllerHelper.getHandler(requestMethod, requestPath);
         if (handler != null) {
@@ -63,33 +65,21 @@ public class DispatcherServlet extends HttpServlet {
             Class<?> controllerClass = handler.getControllerClass();
             Object controllerBean = BeanHelper.getBean(controllerClass);
             //创建请求参数对象
-            //1.request中获取参数对象
-            Map<String, Object> paramMap = new HashMap<String, Object>();
-            Enumeration<String> parameterNames = req.getParameterNames();
-            while (parameterNames.hasMoreElements()) {
-                String paramName = parameterNames.nextElement();
-                String parameterValue = req.getParameter(paramName);
-                paramMap.put(paramName, parameterValue);
+            //request中获取参数对象 判断是否为上传请求
+            Param param;
+            if (UploadHelper.isMultipart(req)) {
+                param = UploadHelper.createParam(req);
+            } else {
+                param = RequestHelper.createParam(req);
             }
-            //2.body中获取参数对象
-            String body = CodecUtil.decodeURL(StreamUtil.getString(req.getInputStream()));
-            if (StringUtils.isNotEmpty(body)) {
-                String[] params = StringUtils.split("body", "&");
-                if (ArrayUtils.isNotEmpty(params)) {
-                    for (String param : params) {
-                        String[] array = StringUtils.split(param, "=");
-                        if (ArrayUtils.isNotEmpty(array) && array.length == 2) {
-                            String paramName = array[0];
-                            String paramValue = array[1];
-                            paramMap.put(paramName, paramValue);
-                        }
-                    }
-                }
-            }
-            Param param = new Param(paramMap);
+            Object result ;
             //调用Action
             Method actionMethod = handler.getActionMethod();
-            Object result = ReflectionUtil.invokeMethod(controllerBean, actionMethod, param);
+            if (param.isEmpty()) {
+                result = ReflectionUtil.invokeMethod(controllerBean, actionMethod);
+            } else {
+                result = ReflectionUtil.invokeMethod(controllerBean, actionMethod, param);
+            }
             if (result instanceof View) {
                 View view = (View) result;
                 String path = view.getPath();
@@ -104,7 +94,6 @@ public class DispatcherServlet extends HttpServlet {
                         req.getRequestDispatcher(ConfigHelper.getAppJspPath() + path).forward(req, resp);
                     }
                 }
-
             } else if (result instanceof Data) {
                 //返回JSON数据
                 Data data = (Data) result;
